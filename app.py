@@ -19,22 +19,25 @@ def fetch_tunebat_info(query):
     url = f"https://tunebat.com/search?q={query.replace(' ', '%20')}"
     print(f"🔍 Searching: {url}")
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(url, timeout=15000)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, timeout=15000)
 
-        # Wait for links to appear or timeout
-        page.wait_for_selector("a[href^='/Info/']", timeout=5000)
-        html = page.content()
-        soup = BeautifulSoup(html, 'html.parser')
-        browser.close()
+            # 🔁 Increase wait timeout to 10s (from 5s)
+            page.wait_for_selector("a[href^='/Info/']", timeout=10000)
+            html = page.content()
+            soup = BeautifulSoup(html, 'html.parser')
+            browser.close()
 
-        for link in soup.select("a[href^='/Info/']"):
-            href = link.get("href")
-            if href:
-                return "https://tunebat.com" + href
-    return None
+            for link in soup.select("a[href^='/Info/']"):
+                href = link.get("href")
+                if href:
+                    return "https://tunebat.com" + href
+    except Exception as e:
+        print(f"❌ fetch_tunebat_info() error: {e}")
+        return None
 
 def extract_metadata(info_url):
     print(f"🎯 Loading: {info_url}")
@@ -76,7 +79,9 @@ def metadata():
 
     info_url = fetch_tunebat_info(full_query) or fetch_tunebat_info(fallback_query)
     if not info_url:
+        print("❌ No song URL found after both queries.")
         return jsonify({"error": "Track not found"}), 404
+
 
     metadata = extract_metadata(info_url)
     if not metadata:
