@@ -25,19 +25,28 @@ def fetch_tunebat_info(query):
             page = browser.new_page()
             page.goto(url, timeout=15000)
 
-            # 🔁 Increase wait timeout to 10s (from 5s)
-            page.wait_for_selector("a[href*='/Info/']", timeout=10000)
+            # ✅ Wrap wait_for_selector in try-except so we don't crash before printing
+            try:
+                page.wait_for_selector("a[href*='/Info/']", timeout=10000)
+                print("✅ Selector appeared.")
+            except Exception as e:
+                print(f"⚠️ Selector wait failed: {e}")
+
             html = page.content()
             soup = BeautifulSoup(html, 'html.parser')
-            print("💡 Dumping Tunebat search HTML for debug:")
-            print(soup.prettify()[:2000])  # print first 2000 chars to logs
-
             browser.close()
 
-            for link in soup.select("a[href^='/Info/']"):
-                href = link.get("href")
+            # ✅ Dump raw HTML for inspection
+            print("💡 Dumping Tunebat search HTML for debug:")
+            print(soup.prettify()[:2000])  # log first 2000 chars
+
+            # ✅ Show links
+            for link in soup.select("a[href*='/Info/']"):
+                href = link.get("href", "")
+                print("🔗 Found link:", href)
                 if href:
                     return "https://tunebat.com" + href
+
     except Exception as e:
         print(f"❌ fetch_tunebat_info() error: {e}")
         return None
