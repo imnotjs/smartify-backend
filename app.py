@@ -23,12 +23,21 @@ def get_metadata():
     print(f"🎧 Fetching metadata for: {query}")
 
     try:
-        res = requests.get(url)
-        if res.status_code != 200:
-            return jsonify({"error": "Failed to fetch"}), 502
+        res = requests.get(url, timeout=10)
+        print(f"🔁 Tunebat API status: {res.status_code}")
+        print(f"🔁 Response preview: {res.text[:300]}")
 
+    except Exception as e:
+        print(f"❌ Exception during API call: {e}")
+        return jsonify({"error": "Tunebat API unreachable"}), 502
+
+    if res.status_code != 200:
+        return jsonify({"error": f"Tunebat API error ({res.status_code})"}), 502
+
+    try:
         data = res.json().get("data", {}).get("items", [])
         if not data:
+            print("⚠️ No results found in API response.")
             return jsonify({"error": "Track not found"}), 404
 
         track = data[0]
@@ -45,8 +54,8 @@ def get_metadata():
         })
 
     except Exception as e:
-        print(f"❌ Error fetching metadata: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+        print(f"❌ Error parsing API response: {e}")
+        return jsonify({"error": "Failed to parse Tunebat data"}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
